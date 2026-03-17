@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مواقع موانى البحر المتوسط والاحمر</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root { 
+            --bg: #0a0b0e; 
+            --bg-gradient: linear-gradient(135deg, #0a0b0e 0%, #141619 100%);
+            --panel: #141619; 
+            --panel-glass: rgba(20, 22, 25, 0.85);
+            --accent: #00d4ff; 
+            --accent-glow: rgba(0, 212, 255, 0.3);
+            --accent-secondary: #ff6b00;
+            --accent-secondary-glow: rgba(255, 107, 0, 0.3);
+            --border: #2a2d32;
+            --border-glow: rgba(42, 45, 50, 0.5);
+            --card-bg: #1d2025;
+            --card-bg-hover: #252a31;
+            --text-dim: #a0a0a0;
+            --text-bright: #ffffff;
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --danger: #ff4757;
+            --info: #00d4ff;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            height: 100%; 
+            font-family: 'Tajawal', 'Cairo', sans-serif; 
+            background: var(--bg-gradient); 
+            color: var(--text-bright); 
+            overflow: hidden; 
+        }
+        
+        /* شاشة التحميل المتطورة */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-gradient);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .loading-content {
+            text-align: center;
+            transform: translateY(0);
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            border: 4px solid rgba(0,212,255,0.1);
+            border-top-color: var(--accent);
+            border-right-color: var(--accent-secondary);
+            border-bottom-color: var(--accent);
+            border-left-color: var(--accent-secondary);
+            border-radius: 50%;
+            animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+            margin: 0 auto 30px;
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+        
+        .loading-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+        
+        .loading-progress {
+            width: 300px;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            margin: 20px auto 0;
+            overflow: hidden;
+        }
+        
+        .loading-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+            border-radius: 4px;
+            animation: progress 2s ease-in-out forwards;
+        }
+        
+        @keyframes progress {
+            to { width: 100%; }
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(720deg); }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* الهيدر المتطور */
+        .header { 
+            height: 80px; 
+            background: var(--panel-glass); 
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border); 
+            display: flex; 
+            align-items: center; 
+            padding: 0 30px; 
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 1000;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: rotate(45deg);
+            transition: transform 0.5s ease;
+        }
+        
+        .logo-icon i {
+            transform: rotate(-45deg);
+            font-size: 1.8rem;
+            color: #000;
+        }
+        
+        .logo:hover .logo-icon {
+            transform: rotate(405deg);
+        }
+        
+        .logo h1 { 
+            font-family: 'Tajawal', sans-serif; 
+            font-size: 1.6rem; 
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+            letter-spacing: 1px;
+        }
+        
+        .logo span {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            display: block;
+            margin-top: 5px;
+        }
+        
+        .header-stats {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .header-stat {
+            background: rgba(0,212,255,0.1);
+            padding: 10px 20px;
+            border-radius: 40px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+        
+        .header-stat:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--accent-glow);
+        }
+        
+        .header-stat i {
+            color: var(--accent);
+            font-size: 1.2rem;
+        }
+        
+        .header-stat-value {
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        
+        .header-stat-label {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+        }
+        
+        /* الحاوية الرئيسية */
+        .container { 
+            display: flex; 
+            height: calc(100vh - 80px); 
+            position: relative;
+        }
+        
+        /* الخريطة */
+        #map { 
+            flex: 1; 
+            filter: grayscale(0.2) invert(0.92) hue-rotate(180deg);
+            transition: filter 0.5s ease;
+            z-index: 1;
+        }
+        
+        #map:hover {
+            filter: grayscale(0.1) invert(0.88) hue-rotate(180deg);
+        }
+        
+        /* الشريط الجانبي المتطور */
+        .sidebar { 
+            width: 480px; 
+            background: var(--panel-glass); 
+            backdrop-filter: blur(10px);
+            border-left: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            padding: 25px;
+            box-shadow: -5px 0 30px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 10;
+            overflow-y: auto;
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: var(--card-bg);
+            border-radius: 10px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+        }
+        
+        /* بطاقات التحليلات */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .analytics-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .analytics-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+        
+        .analytics-card:hover::before {
+            transform: translateX(0);
+        }
+        
+        .analytics-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        
+        .analytics-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(255,107,0,0.1));
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        
+        .analytics-icon i {
+            font-size: 1.8rem;
+            color: var(--accent);
+        }
+        
+        .analytics-value {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+            background: linear-gradient(135deg, var(--text-bright), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .analytics-label {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+        
+        .analytics-trend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            border-radius: 20px;
+            background: rgba(0,255,136,0.1);
+            color: var(--success);
+        }
+        
+        /* حاوية الرسوم البيانية */
+        .charts-container {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .chart-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid var(--border);
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .chart-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chart-header h3 i {
+            color: var(--accent);
+        }
+        
+        .chart-legend {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+        }
+        
+        .chart-wrapper {
+            height: 200px;
+            position: relative;
+        }
+        
+        /* شبكة التصفية المتقدمة */
+        .filter-section {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            margin-bottom: 25px;
+        }
+        
+        .filter-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+        
+        .filter-title h4 {
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .filter-tabs {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .filter-tab {
+            text-align: center;
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .filter-tab:hover {
+            border-color: var(--accent);
+            background: rgba(0,212,255,0.1);
+        }
+        
+        .filter-tab.active {
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            color: #000;
+            border-color: transparent;
+            font-weight: 700;
+            box-shadow: 0 5px 15px var(--accent-glow);
+        }
+        
+        .filter-tab.active i {
+            color: #000;
+        }
+        
+        .search-box { 
+            background: rgba(255,255,255,0.05); 
+            border: 1px solid var(--border); 
+            color: var(--text-bright); 
+            padding: 15px 20px 15px 50px; 
+            border-radius: 40px; 
+            width: 100%; 
+            margin-top: 15px;
+            outline: none; 
+            font-family: 'Tajawal', sans-serif; 
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2300d4ff"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: left 20px center;
+            background-size: 20px;
+        }
+        
+        .search-box:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+            background-color: rgba(0,212,255,0.05);
+        }
+        
+        .search-box::placeholder {
+            color: #4a4f55;
+            font-weight: 300;
+        }
+        
+        /* قائمة الموانئ المتطورة */
+        .port-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .port-list-header h4 {
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .port-count {
+            background: var(--accent);
+            color: #000;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+        
+        .port-list { 
+            flex: 1; 
+            overflow-y: auto;
+            padding-left: 5px;
+            max-height: 400px;
+        }
+        
+        .port-card { 
+            background: var(--card-bg); 
+            border-right: 4px solid transparent; 
+            padding: 20px; 
+            margin-bottom: 12px; 
+            border-radius: 16px; 
+            cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .port-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .port-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .port-card:hover { 
+            border-right-color: var(--accent); 
+            background: var(--card-bg-hover); 
+            transform: translateX(-8px) translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        
+        .port-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .port-card h4 { 
+            margin: 0; 
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .port-card .badge { 
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary)); 
+            color: #000; 
+            padding: 4px 12px; 
+            border-radius: 30px; 
+            font-weight: 700; 
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .port-card .meta { 
+            font-size: 0.85rem; 
+            color: var(--text-dim); 
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .port-card .meta span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .port-card .meta i {
+            color: var(--accent);
+            font-size: 0.9rem;
+        }
+        
+        .oil-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+        }
+        
+        .oil-yes {
+            background: rgba(255,165,0,0.2);
+            color: #ffa500;
+            border: 1px solid rgba(255,165,0,0.3);
+        }
+        
+        .oil-no {
+            background: rgba(74,79,85,0.2);
+            color: var(--text-dim);
+            border: 1px solid rgba(74,79,85,0.3);
+        }
+        
+        .port-type-badge {
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            background: rgba(0,212,255,0.1);
+            color: var(--accent);
+        }
+        
+        /* قسم الإحصائيات المتقدمة */
+        .stats-footer {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 25px;
+        }
+        
+        .stat-block {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 15px;
+            border: 1px solid var(--border);
+        }
+        
+        .stat-block-title {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+        }
+        
+        .stat-block-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .stat-block-bar {
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .stat-block-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+            border-radius: 4px;
+        }
+        
+        /* تلميحات الأدوات */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 160px;
+            background: var(--panel-glass);
+            backdrop-filter: blur(10px);
+            color: var(--text-bright);
+            text-align: center;
+            padding: 8px;
+            border-radius: 10px;
+            border: 1px solid var(--accent);
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -80px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.75rem;
+        }
+        
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        /* أزرار عائمة */
+        .floating-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 5px 20px var(--accent-glow);
+            z-index: 100;
+            transition: all 0.3s ease;
+            border: none;
+            color: #000;
+            font-size: 1.5rem;
+        }
+        
+        .floating-btn:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 10px 30px var(--accent-glow);
+        }
+        
+        /* الوضع الليلي */
+        .dark-mode-toggle {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 50px;
+            height: 50px;
+            background: var(--panel);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            z-index: 100;
+            transition: all 0.3s ease;
+            color: var(--accent);
+        }
+        
+        .dark-mode-toggle:hover {
+            border-color: var(--accent);
+            transform: rotate(180deg);
+        }
+        
+        /* تأثيرات الجسيمات */
+        #particles-js {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="particles-js"></div>
+
+    <!-- شاشة التحميل المتطورة -->
+    <div class="loading-overlay" id="loading">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">مواقع موانى البحر المتوسط والاحمر</div>
+            <div style="color: var(--text-dim); margin-top: 10px;">نظام تحليل الموانئ المتقدم</div>
+            <div class="loading-progress">
+                <div class="loading-progress-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- الهيدر -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">
+                <i class="fas fa-anchor"></i>
+            </div>
+            <div>
+                <h1>مواقع موانى البحر المتوسط والاحمر</h1>
+                <span> المجموعة 2 - Group 2 </span>
+            </div>
+        </div>
+        
+        <div class="header-stats">
+            <div class="header-stat" id="totalPortsStat">
+                <i class="fas fa-ship"></i>
+                <div>
+                    <div class="header-stat-value">0</div>
+                    <div class="header-stat-label">إجمالي الموانئ</div>
+                </div>
+            </div>
+            <div class="header-stat" id="totalCountriesStat">
+                <i class="fas fa-flag"></i>
+                <div>
+                    <div class="header-stat-value">0</div>
+                    <div class="header-stat-label">الدول</div>
+                </div>
+            </div>
+            <div class="header-stat" id="oilPortsStat">
+                <i class="fas fa-oil-can"></i>
+                <div>
+                    <div class="header-stat-value">0</div>
+                    <div class="header-stat-label">موانئ النفط</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- الحاوية الرئيسية -->
+    <div class="container">
+        <!-- الشريط الجانبي -->
+        <aside class="sidebar">
+            <!-- بطاقات التحليلات السريعة -->
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <div class="analytics-icon">
+                        <i class="fas fa-globe-asia"></i>
+                    </div>
+                    <div class="analytics-value" id="analyticsCountries">0</div>
+                    <div class="analytics-label">دولة</div>
+                    <div class="analytics-trend">
+                        <i class="fas fa-arrow-up"></i> +5
+                    </div>
+                </div>
+                
+                <div class="analytics-card">
+                    <div class="analytics-icon">
+                        <i class="fas fa-ship"></i>
+                    </div>
+                    <div class="analytics-value" id="analyticsPorts">0</div>
+                    <div class="analytics-label">ميناء</div>
+                    <div class="analytics-trend">
+                        <i class="fas fa-arrow-up"></i> +12
+                    </div>
+                </div>
+                
+                <div class="analytics-card">
+                    <div class="analytics-icon">
+                        <i class="fas fa-oil-can"></i>
+                    </div>
+                    <div class="analytics-value" id="analyticsOil">0</div>
+                    <div class="analytics-label">ميناء نفط</div>
+                    <div class="analytics-trend" style="color: var(--warning);">
+                        <i class="fas fa-chart-line"></i> 45%
+                    </div>
+                </div>
+                
+                <div class="analytics-card">
+                    <div class="analytics-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="analytics-value" id="analyticsLarge">0</div>
+                    <div class="analytics-label">موانئ كبيرة</div>
+                    <div class="analytics-trend" style="color: var(--info);">
+                        <i class="fas fa-star"></i> رئيسي
+                    </div>
+                </div>
+            </div>
+            
+            <!-- الرسوم البيانية المتقدمة -->
+            <div class="charts-container">
+                <!-- توزيع الموانئ حسب الحجم -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-pie"></i> توزيع الموانئ حسب الحجم</h3>
+                        <div class="chart-legend">
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: #00d4ff;"></span>
+                                <span>كبير</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: #ffaa00;"></span>
+                                <span>متوسط</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: #ff4757;"></span>
+                                <span>صغير</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="sizeChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- توزيع الموانئ حسب النوع -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-bar"></i> أنواع الموانئ</h3>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="typeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- قسم التصفية المتقدمة -->
+            <div class="filter-section">
+                <div class="filter-title" onclick="toggleFilters()">
+                    <h4><i class="fas fa-sliders-h" style="color: var(--accent);"></i> تصفية متقدمة</h4>
+                    <i class="fas fa-chevron-down" id="filterArrow"></i>
+                </div>
+                
+                <div id="filterContent" style="display: block;">
+                    <div class="filter-tabs">
+                        <div class="filter-tab active" onclick="filterPorts('all', this)">
+                            <i class="fas fa-globe"></i> الكل
+                        </div>
+                        <div class="filter-tab" onclick="filterPorts('oil', this)">
+                            <i class="fas fa-oil-can"></i> نفط
+                        </div>
+                        <div class="filter-tab" onclick="filterPorts('large', this)">
+                            <i class="fas fa-star"></i> كبير
+                        </div>
+                        <div class="filter-tab" onclick="filterPorts('small', this)">
+                            <i class="fas fa-compress"></i> صغير
+                        </div>
+                    </div>
+                    
+                    <input type="text" id="search" class="search-box" placeholder="ابحث عن ميناء أو دولة...">
+                </div>
+            </div>
+            
+            <!-- قائمة الموانئ -->
+            <div class="port-list-header">
+                <h4><i class="fas fa-list" style="color: var(--accent);"></i> قائمة الموانئ</h4>
+                <span class="port-count" id="visiblePortsCount">0</span>
+            </div>
+            <div id="list" class="port-list"></div>
+            
+            <!-- إحصائيات إضافية -->
+            <div class="stats-footer">
+                <div class="stat-block">
+                    <div class="stat-block-title">أكثر دولة</div>
+                    <div class="stat-block-value" id="topCountry">-</div>
+                    <div class="stat-block-bar">
+                        <div class="stat-block-fill" id="topCountryBar" style="width: 100%;"></div>
+                    </div>
+                </div>
+                
+                <div class="stat-block">
+                    <div class="stat-block-title">نسبة موانئ النفط</div>
+                    <div class="stat-block-value" id="oilPercentage">0%</div>
+                    <div class="stat-block-bar">
+                        <div class="stat-block-fill" id="oilPercentageBar" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- الخريطة -->
+        <div id="map"></div>
+    </div>
+    
+    <!-- أزرار عائمة -->
+    <div class="floating-btn" onclick="refreshData()">
+        <i class="fas fa-sync-alt"></i>
+    </div>
+    
+    <div class="dark-mode-toggle" onclick="toggleDarkMode()">
+        <i class="fas fa-moon"></i>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    
+    <script>
+        (function() {
+            // إخفاء شاشة التحميل بعد 2.5 ثانية
+            setTimeout(() => {
+                document.getElementById('loading').classList.add('fade-out');
+            }, 2500);
+
+            // تفعيل تأثير الجسيمات
+            particlesJS('particles-js', {
+                particles: {
+                    number: { value: 50, density: { enable: true, value_area: 800 } },
+                    color: { value: '#00d4ff' },
+                    shape: { type: 'circle' },
+                    opacity: { value: 0.3, random: true },
+                    size: { value: 3, random: true },
+                    line_linked: {
+                        enable: true,
+                        distance: 150,
+                        color: '#00d4ff',
+                        opacity: 0.2,
+                        width: 1
+                    },
+                    move: {
+                        enable: true,
+                        speed: 2,
+                        direction: 'none',
+                        random: true,
+                        straight: false,
+                        out_mode: 'out'
+                    }
+                },
+                interactivity: {
+                    detect_on: 'canvas',
+                    events: {
+                        onhover: { enable: true, mode: 'grab' },
+                        onclick: { enable: true, mode: 'push' }
+                    }
+                }
+            });
+
+            // --- إعداد الخريطة ---
+            const map = L.map('map', { 
+                zoomControl: false,
+                fadeAnimation: true,
+                zoomAnimation: true,
+                markerZoomAnimation: true
+            }).setView([35.0, 15.0], 4);
+            
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; Z3ROX-0X'
+            }).addTo(map);
+
+            // إضافة عناصر تحكم مخصصة
+            L.control.zoom({
+                position: 'bottomleft'
+            }).addTo(map);
+
+            // --- البيانات (377 موقعاً فريداً) ---
+            const rawFeatures = [
+                {"type":"Feature","properties":{"PORT_NAME":"LA GOULETTE","COUNTRY":"TN","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":"K"},"geometry":{"coordinates":[10.300000000263033,36.800000000268405]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TUNIS","COUNTRY":"TN","HARBORSIZE":"M","HARBORTYPE":"LC","OIL_DEPTH":" "},"geometry":{"coordinates":[10.250000000619334,36.800000000268405]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TAZERKA OIL TERMINAL","COUNTRY":"TN","HARBORSIZE":"M","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[11.683333333021197,36.599999999677095]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BANZART","COUNTRY":"TN","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[9.883333333271761,37.283333333201199]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ANNABA","COUNTRY":"DZ","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[7.766666666716747,36.916666666891622]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SKIKDA","COUNTRY":"DZ","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[6.916666666485711,36.883333333501028]}},
+                {"type":"Feature","properties":{"PORT_NAME":"COLLO","COUNTRY":"DZ","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[6.583333333431677,36.999999999637062]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BEJAIA","COUNTRY":"DZ","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[5.083333333341065,36.750000000050811]}},
+                {"type":"Feature","properties":{"PORT_NAME":"DELLYS","COUNTRY":"DZ","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[3.916666666304451,36.916666666891622]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ALGER","COUNTRY":"DZ","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[3.066666666073415,36.766666666241008]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TENES","COUNTRY":"DZ","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[1.316666665967678,36.533333333076712]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MOSTAGANEM","COUNTRY":"DZ","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[0.083333333038942,35.933333333625882]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ARZEW","COUNTRY":"DZ","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"G"},"geometry":{"coordinates":[-0.300000000557121,35.850000000167121]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ARZEW EL DJEDID","COUNTRY":"DZ","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"H"},"geometry":{"coordinates":[-0.250000000015091,35.816666666826499]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ORAN","COUNTRY":"DZ","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-0.633333333611154,35.699999999650409]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MERS EL KEBIR","COUNTRY":"DZ","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-0.700000000401607,35.733333333517763]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BENI SAF","COUNTRY":"DZ","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-1.383333333656461,35.299999999733281]}},
+                {"type":"Feature","properties":{"PORT_NAME":"GHAZAOUET","COUNTRY":"DZ","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-1.866666666539923,35.100000000139019]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORT NADOR","COUNTRY":"MA","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-2.933333333390807,35.283333333480662]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MERSA SFAX","COUNTRY":"TN","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"K"},"geometry":{"coordinates":[10.766666665999709,34.73333333303097]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MAHDIA","COUNTRY":"TN","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[11.066666666556831,35.500000000008235]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SOUSSE","COUNTRY":"TN","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"L"},"geometry":{"coordinates":[10.650000000463855,35.833333333501479]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MERSIN","COUNTRY":"TR","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":"L"},"geometry":{"coordinates":[34.633333332970651,36.800000000268405]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BOTAS","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[35.933333333588166,36.883333333501028]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ISKENDERUN","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"J"},"geometry":{"coordinates":[36.166666666456507,36.599999999677095]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KYRENIA","COUNTRY":"CY","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[33.333333333251424,35.349999999235003]}},
+                {"type":"Feature","properties":{"PORT_NAME":"XEROS","COUNTRY":"CY","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"K"},"geometry":{"coordinates":[32.833333333221219,35.133333332845716]}},
+                {"type":"Feature","properties":{"PORT_NAME":"LIMASSOL","COUNTRY":"CY","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"E"},"geometry":{"coordinates":[33.049999999841063,34.666666666868487]}},
+                {"type":"Feature","properties":{"PORT_NAME":"LARNACA","COUNTRY":"CY","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"H"},"geometry":{"coordinates":[33.650000000057005,34.916666666577839]}},
+                {"type":"Feature","properties":{"PORT_NAME":"DHEKELIA","COUNTRY":"CY","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"H"},"geometry":{"coordinates":[33.716666665949163,34.966666666238794]}},
+                {"type":"Feature","properties":{"PORT_NAME":"FAMAGUSTA","COUNTRY":"CY","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[33.933333333467338,35.116666666827079]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TARTUS","COUNTRY":"SY","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"B"},"geometry":{"coordinates":[35.866666666797713,34.899999999759793]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BANIYAS","COUNTRY":"SY","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":"F"},"geometry":{"coordinates":[35.949999999836628,35.183333332610822]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AL LADHIQIYAH","COUNTRY":"SY","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":"J"},"geometry":{"coordinates":[35.766666666612025,35.533333333304512]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TARABULUS","COUNTRY":"LB","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":"C"},"geometry":{"coordinates":[35.833333333402472,34.449999999687542]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SAYDA","COUNTRY":"LB","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[35.349999999620714,33.499999999657312]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ASHDOD","COUNTRY":"IL","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"F"},"geometry":{"coordinates":[34.650000000117402,31.816666666220957]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MERSA TOBRUQ","COUNTRY":"LY","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[23.983333333405096,32.083333333681935]}},
+                {"type":"Feature","properties":{"PORT_NAME":"DARNAH","COUNTRY":"LY","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[22.649999999392332,32.76666666616773]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BANGHAZI","COUNTRY":"LY","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":"M"},"geometry":{"coordinates":[20.049999999953855,32.116666666791836]}},
+                {"type":"Feature","properties":{"PORT_NAME":"EZ ZUEITINA","COUNTRY":"LY","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"L"},"geometry":{"coordinates":[20.049999999953855,30.84999999962097]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AL BURAYQAH","COUNTRY":"LY","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"A"},"geometry":{"coordinates":[19.599999999567338,30.416666666488776]}},
+                {"type":"Feature","properties":{"PORT_NAME":"RAS   LANUF","COUNTRY":"LY","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[18.566666667009997,30.516666666419237]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AS SIDR","COUNTRY":"LY","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[18.366666666638604,30.633333333125314]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MISRATAH","COUNTRY":"LY","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"J"},"geometry":{"coordinates":[15.216666666627916,32.366666665919112]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MINA TARABULUS (TRIPOLI)","COUNTRY":"LY","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":"K"},"geometry":{"coordinates":[13.183333334010142,32.899999999850365]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AZ ZAWIYA","COUNTRY":"LY","HARBORSIZE":"S","HARBORTYPE":"OR","OIL_DEPTH":"D"},"geometry":{"coordinates":[12.716666666476872,32.800000000011252]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MARSA SABRATAH","COUNTRY":"LY","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[12.499999999856989,32.816666666208711]}},
+                {"type":"Feature","properties":{"PORT_NAME":"HOUMT SOUK","COUNTRY":"TN","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[10.849999999936948,33.883333333903195]}},
+                {"type":"Feature","properties":{"PORT_NAME":"GABES","COUNTRY":"TN","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"K"},"geometry":{"coordinates":[10.116666667038395,33.899999999454501]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SKHIRA","COUNTRY":"TN","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"G"},"geometry":{"coordinates":[10.099999999891642,34.283333332990033]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ANTALYA","COUNTRY":"TR","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"E"},"geometry":{"coordinates":[30.616666667378798,36.833333333122653]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ALANYA","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[32.000000000136964,36.533333333076712]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TASUCU","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[33.883333333823643,36.31666666675266]}},
+                {"type":"Feature","properties":{"PORT_NAME":"HAYDARPASA","COUNTRY":"TR","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[29.016666666204127,40.999999999677861]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KABA BURNU","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":"N"},"geometry":{"coordinates":[29.53333333338113,40.766666666647005]}},
+                {"type":"Feature","properties":{"PORT_NAME":"DERINCE BURNU","COUNTRY":"TR","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"L"},"geometry":{"coordinates":[29.816666666791463,40.749999999528761]}},
+                {"type":"Feature","properties":{"PORT_NAME":"IZMIT","COUNTRY":"TR","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":"N"},"geometry":{"coordinates":[29.916666666977157,40.766666666647005]}},
+                {"type":"Feature","properties":{"PORT_NAME":"GOLCUK BURNU","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[29.816666666791463,40.733333333456073]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MUDANYA","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[28.883333332623188,40.383333333701316]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BANDIRMA","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[27.966666666500029,40.35000000048025]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ERDEK","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[27.800000000422145,40.383333333701316]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KARABIGA","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[27.316666666640419,40.399999999964464]}},
+                {"type":"Feature","properties":{"PORT_NAME":"CANAKKALE","COUNTRY":"TR","HARBORSIZE":"S","HARBORTYPE":"LC","OIL_DEPTH":" "},"geometry":{"coordinates":[26.400000000517228,40.149999999899499]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AYVALIK","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[26.700000000176018,39.316666666955797]}},
+                {"type":"Feature","properties":{"PORT_NAME":"IZMIR","COUNTRY":"TR","HARBORSIZE":"L","HARBORTYPE":"CN","OIL_DEPTH":"N"},"geometry":{"coordinates":[27.133333333415781,38.433333333788781]}},
+                {"type":"Feature","properties":{"PORT_NAME":"NEMRUT LIMANI BAY","COUNTRY":"TR","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":"M"},"geometry":{"coordinates":[26.916666665897573,38.766666667001985]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KUSADASI","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[27.249999999849937,37.866666667091778]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MARMARIS","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[28.28333333330561,36.850000000174688]}},
+                {"type":"Feature","properties":{"PORT_NAME":"FETHIYE","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[29.100000000141396,36.633333333785863]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MILOS","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[24.450000000040063,36.716666666244883]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SOUDHA","COUNTRY":"GR","HARBORSIZE":"M","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[24.18333333377652,35.483333333160843]}},
+                {"type":"Feature","properties":{"PORT_NAME":"IRAKLION","COUNTRY":"GR","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":"K"},"geometry":{"coordinates":[25.150000000441707,35.349999999235003]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SITIA","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[26.133333333355349,35.216666667017911]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KALI LIMENES","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":"G"},"geometry":{"coordinates":[24.833333332737798,34.933333333156909]}},
+                {"type":"Feature","properties":{"PORT_NAME":"RODHOS","COUNTRY":"GR","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"N"},"geometry":{"coordinates":[28.233333333661907,36.450000000333056]}},
+                {"type":"Feature","properties":{"PORT_NAME":"LIMIN KOS","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[27.283333333245178,36.900000000250735]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KALIMNOS","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[26.983333333586387,36.950000000050366]}},
+                {"type":"Feature","properties":{"PORT_NAME":"LAKKI","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":"L"},"geometry":{"coordinates":[26.850000000005412,37.133333333329894]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ECEABAT","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"LC","OIL_DEPTH":" "},"geometry":{"coordinates":[26.36666666622369,40.183333333600018]}},
+                {"type":"Feature","properties":{"PORT_NAME":"GELIBOLU","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"LC","OIL_DEPTH":"K"},"geometry":{"coordinates":[26.666666666780809,40.399999999964464]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TEKIRDAG","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"LC","OIL_DEPTH":"L"},"geometry":{"coordinates":[27.516666667011812,40.983333333028362]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ISTANBUL","COUNTRY":"TR","HARBORSIZE":"L","HARBORTYPE":"LC","OIL_DEPTH":"P"},"geometry":{"coordinates":[28.966666666560432,41.016666666827732]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ORMOS ALIVERIOU","COUNTRY":"GR","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[24.049999999297249,38.383333333713104]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORTHMOS EVRIPOU","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[23.583333333560606,38.46666666648018]}},
+                {"type":"Feature","properties":{"PORT_NAME":"LARIMNA","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[23.283333333003487,38.566666666223348]}},
+                {"type":"Feature","properties":{"PORT_NAME":"STILIS","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[22.616666666895384,38.916666666914928]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TSINGELI","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[22.850000000662057,39.166666667286719]}},
+                {"type":"Feature","properties":{"PORT_NAME":"VOLOS","COUNTRY":"GR","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[22.949999999949451,39.366666666864802]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MILIANA","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[23.216666666213001,39.166666667286719]}},
+                {"type":"Feature","properties":{"PORT_NAME":"THESSALONIKI","COUNTRY":"GR","HARBORSIZE":"M","HARBORTYPE":"CN","OIL_DEPTH":"E"},"geometry":{"coordinates":[22.933333332802668,40.63333333372114]}},
+                {"type":"Feature","properties":{"PORT_NAME":"YERAKINI","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[23.466666667126422,40.266666666496363]}},
+                {"type":"Feature","properties":{"PORT_NAME":"STRATONI","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[23.833333333575698,40.516666667037413]}},
+                {"type":"Feature","properties":{"PORT_NAME":"LAGOS","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[25.133333333294921,40.999999999677861]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ALEXANDROUPOLI","COUNTRY":"GR","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[25.883333333340225,40.83333333324935]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MITILINI","COUNTRY":"GR","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[26.566666666595079,39.099999999877362]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PLOMARION","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[26.36666666622369,38.983333333423801]}},
+                {"type":"Feature","properties":{"PORT_NAME":"VRAKHONISIS KALLONIS","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[26.083333332813321,39.083333333599043]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KHIOS","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[26.133333333355349,38.366666666527152]}},
+                {"type":"Feature","properties":{"PORT_NAME":"NEON KARLOVAS","COUNTRY":"GR","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[26.68333333392756,37.800000000057537]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SAMOS","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[26.966666666439597,37.750000000387558]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PITHAGORION","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[26.950000000191146,37.683333333376602]}},
+                {"type":"Feature","properties":{"PORT_NAME":"GAVRIO","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[24.7333333334504,37.883333332958159]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ANDROS","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[24.950000000070283,37.833333332957444]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MIKONOS","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[25.333333333666342,37.449999999877598]}},
+                {"type":"Feature","properties":{"PORT_NAME":"LIMIN SIROU","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"L"},"geometry":{"coordinates":[24.950000000070283,37.433333333119741]}},
+                {"type":"Feature","properties":{"PORT_NAME":"NISOS NAXOS","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[25.366666667061555,37.099999999526581]}},
+                {"type":"Feature","properties":{"PORT_NAME":"DHIAVLOS STENO","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[23.599999999809064,38.449999999700935]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SHENGJIN","COUNTRY":"AL","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[19.599999999567338,41.816666666306745]}},
+                {"type":"Feature","properties":{"PORT_NAME":"DURRES","COUNTRY":"AL","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"M"},"geometry":{"coordinates":[19.449999999737944,41.316666666503622]}},
+                {"type":"Feature","properties":{"PORT_NAME":"VLORES","COUNTRY":"AL","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":"J"},"geometry":{"coordinates":[19.499999999381647,40.466666666043288]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KERKIRA","COUNTRY":"GR","HARBORSIZE":"M","HARBORTYPE":"OR","OIL_DEPTH":"M"},"geometry":{"coordinates":[19.933333333519702,39.616666666709058]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PREVEZA","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":"N"},"geometry":{"coordinates":[20.750000000355499,38.949999999945575]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ARGOSTOLION","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[20.516666666588861,38.183333332975593]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MESOLONGION","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[21.416666666463563,38.366666666527152]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ITEA","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[22.416666666523994,38.433333333788781]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AIYION","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[22.083333333469962,38.250000000357431]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PATRAI","COUNTRY":"GR","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[21.733333334167469,38.250000000357431]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KATAKOLON","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[21.316666667176165,37.650000000630321]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PILOS","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[21.666666667376987,36.900000000250735]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KALAMATA","COUNTRY":"GR","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"O"},"geometry":{"coordinates":[22.116666666865203,37.016666667153238]}},
+                {"type":"Feature","properties":{"PORT_NAME":"YITHION","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[22.56666666725172,36.750000000050811]}},
+                {"type":"Feature","properties":{"PORT_NAME":"NAVPLIO","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[22.800000000120026,37.566666666471313]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MEGARA OIL TERMINAL","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"H"},"geometry":{"coordinates":[23.400000000335968,37.966666666648408]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AYIOS NIKOLAOS","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[23.533333333916907,37.983333333939889]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ELEVSIS","COUNTRY":"GR","HARBORSIZE":"S","HARBORTYPE":"OR","OIL_DEPTH":"G"},"geometry":{"coordinates":[23.550000000165365,38.033333333453392]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PAKHI OIL TERMINAL","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[23.383333333189182,37.966666666648408]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PERAMA","COUNTRY":"GR","HARBORSIZE":"S","HARBORTYPE":"OR","OIL_DEPTH":"L"},"geometry":{"coordinates":[23.56666666641382,37.966666666648408]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PIRAIEVS","COUNTRY":"GR","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":"J"},"geometry":{"coordinates":[23.649999999452731,37.933333333729415]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ORMOS MIKRO VATHI","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[23.599999999809064,38.433333333788781]}},
+                {"type":"Feature","properties":{"PORT_NAME":"DUBROVNIK","COUNTRY":"HR","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":"O"},"geometry":{"coordinates":[18.083333333228268,42.666666666411018]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORTO DI BARLETTA","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"M"},"geometry":{"coordinates":[16.283333332580501,41.316666666503622]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MANFREDONIA","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[15.916666667029556,41.616666666904059]}},
+                {"type":"Feature","properties":{"PORT_NAME":"VASTO","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"M"},"geometry":{"coordinates":[14.7166666665977,42.116666666477926]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ORTONA","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"N"},"geometry":{"coordinates":[14.416666666938909,42.350000000131715]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PESCARA","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[14.216666666567484,42.466666666990697]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ANCONA","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"J"},"geometry":{"coordinates":[13.499999999917421,43.61666666603147]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORTO DI CORSINI","COUNTRY":"IT","HARBORSIZE":"M","HARBORTYPE":"LC","OIL_DEPTH":"C"},"geometry":{"coordinates":[12.28333333413544,44.500000000244768]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORTO DI MALAMOCCO","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"LC","OIL_DEPTH":"H"},"geometry":{"coordinates":[12.316666666632353,45.333333333192243]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORTO DI LIDO-VENEZIA","COUNTRY":"IT","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":"H"},"geometry":{"coordinates":[12.433333333066505,45.416666666393169]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MONFALCONE","COUNTRY":"IT","HARBORSIZE":"M","HARBORTYPE":"RB","OIL_DEPTH":" "},"geometry":{"coordinates":[13.54999999956112,45.783333333294578]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TRIESTE","COUNTRY":"IT","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":"F"},"geometry":{"coordinates":[13.766666666180969,45.649999999788349]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MUGGIA","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"J"},"geometry":{"coordinates":[13.766666666180969,45.599999999831368]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KOPER","COUNTRY":"SI","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[13.733333333684055,45.549999999971327]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PIRAN","COUNTRY":"SI","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[13.566666666707873,45.533333333055943]}},
+                {"type":"Feature","properties":{"PORT_NAME":"UMAG","COUNTRY":"HR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[13.516666667064175,45.433333333440572]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ROVINJ","COUNTRY":"HR","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[13.63333333349836,45.083333332770877]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PULA","COUNTRY":"HR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"L"},"geometry":{"coordinates":[13.800000000474542,44.883333333074162]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BRSICA","COUNTRY":"HR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[14.049999999591336,45.033333332814948]}},
+                {"type":"Feature","properties":{"PORT_NAME":"RIJEKA LUKA","COUNTRY":"HR","HARBORSIZE":"L","HARBORTYPE":"RB","OIL_DEPTH":"K"},"geometry":{"coordinates":[14.433333333187365,45.333333333192243]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BAKAR","COUNTRY":"HR","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":"K"},"geometry":{"coordinates":[14.533333333373061,45.300000000146476]}},
+                {"type":"Feature","properties":{"PORT_NAME":"OMISALJ","COUNTRY":"HR","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":"A"},"geometry":{"coordinates":[14.549999999621519,45.216666666743322]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SENJ","COUNTRY":"HR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[14.89999999982234,44.983333333076359]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ZADAR","COUNTRY":"HR","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":"L"},"geometry":{"coordinates":[15.216666666627916,44.116666666780084]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SIBENIK","COUNTRY":"HR","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[15.883333333634315,43.733333333276633]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MOLFETTA","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[16.60000000028441,41.216666666611111]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SPLIT","COUNTRY":"HR","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":"M"},"geometry":{"coordinates":[16.43333333330823,43.500000000525681]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PLOCE","COUNTRY":"HR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":"K"},"geometry":{"coordinates":[17.433333333368658,43.050000000376187]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TORRE ANNUNZIATA","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[14.450000000334153,40.749999999528761]}},
+                {"type":"Feature","properties":{"PORT_NAME":"CASTELLAMMARE DI STABIA","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[14.483333332831068,40.699999999399296]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SALERNO","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[14.749999999992944,40.66666666659934]}},
+                {"type":"Feature","properties":{"PORT_NAME":"VIBO VALENTIA MARINA","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[16.133333333649404,38.716666667363477]}},
+                {"type":"Feature","properties":{"PORT_NAME":"REGGIO DI CALABRIA","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[15.64999999986768,38.116666666732883]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MESSINA","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"L"},"geometry":{"coordinates":[15.566666666828736,38.200000000409439]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MILAZZO","COUNTRY":"IT","HARBORSIZE":"M","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[15.25000000002316,38.216666666262689]}},
+                {"type":"Feature","properties":{"PORT_NAME":"GIOIA TAURO","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"LC","OIL_DEPTH":" "},"geometry":{"coordinates":[15.899999999882768,38.416666667005927]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORTO DI PALERMO","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"G"},"geometry":{"coordinates":[13.366666666336483,38.133333333670961]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TRAPANI","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"O"},"geometry":{"coordinates":[12.499999999856989,38.016666666580882]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MARSALA","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[12.433333333066505,37.78333333341881]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MAZARA DEL VALLO","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CT","OIL_DEPTH":" "},"geometry":{"coordinates":[12.583333332895933,37.650000000630321]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORTO EMPEDOCLE","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[13.533333333312665,37.283333333201199]}},
+                {"type":"Feature","properties":{"PORT_NAME":"LICATA","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[13.933333333157151,37.099999999526581]}},
+                {"type":"Feature","properties":{"PORT_NAME":"GELA","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"G"},"geometry":{"coordinates":[14.249999999962728,37.066666667067722]}},
+                {"type":"Feature","properties":{"PORT_NAME":"POZZALLO","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[14.850000000178637,36.716666666244883]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SIRACUSA","COUNTRY":"IT","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[15.283333333418401,37.049999999581644]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AUGUSTA","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"F"},"geometry":{"coordinates":[15.233333332876372,37.216666666636321]}},
+                {"type":"Feature","properties":{"PORT_NAME":"CATANIA","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"L"},"geometry":{"coordinates":[15.099999999295433,37.499999999453706]}},
+                {"type":"Feature","properties":{"PORT_NAME":"LIPARI","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[14.966666666612825,38.483333333750174]}},
+                {"type":"Feature","properties":{"PORT_NAME":"VALLETTA HARBORS","COUNTRY":"MT","HARBORSIZE":"M","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[14.516666667124605,35.900000000405484]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MARSAXLOKK","COUNTRY":"MT","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[14.549999999621519,35.816666666826499]}},
+                {"type":"Feature","properties":{"PORT_NAME":"CROTONE","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"P"},"geometry":{"coordinates":[17.133333332811539,39.083333333599043]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TARANTO","COUNTRY":"IT","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":"B"},"geometry":{"coordinates":[17.199999999601989,40.466666666043288]}},
+                {"type":"Feature","properties":{"PORT_NAME":"GALLIPOLI","COUNTRY":"IT","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[17.983333333042541,40.050000000099132]}},
+                {"type":"Feature","properties":{"PORT_NAME":"OTRANTO","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[18.50000000021954,40.149999999899499]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MONOPOLI","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[17.299999999787687,40.94999999979386]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BARI","COUNTRY":"IT","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":"H"},"geometry":{"coordinates":[16.866666666547957,41.133333333498854]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORTO DI ORISTANO","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[8.550000000157297,39.866666666777775]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORTO TORRES","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"G"},"geometry":{"coordinates":[8.400000000327902,40.83333333324935]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SAN REMO","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CT","OIL_DEPTH":" "},"geometry":{"coordinates":[7.783333333863534,43.8166666667749]}},
+                {"type":"Feature","properties":{"PORT_NAME":"IMPERIA","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[8.033333332980327,43.883333333499337]}},
+                {"type":"Feature","properties":{"PORT_NAME":"RADA DI VADO","COUNTRY":"IT","HARBORSIZE":"M","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[8.433333333723143,44.266666666739766]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SAVONA","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"L"},"geometry":{"coordinates":[8.500000000513596,44.316666666371226]}},
+                {"type":"Feature","properties":{"PORT_NAME":"GENOVA","COUNTRY":"IT","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":"A"},"geometry":{"coordinates":[8.93333333285503,44.400000000411644]}},
+                {"type":"Feature","properties":{"PORT_NAME":"LA SPEZIA","COUNTRY":"IT","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":"J"},"geometry":{"coordinates":[9.833333333628062,44.100000000005828]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MARINA DI CARRARA","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[10.033333333999487,44.033333333364027]}},
+                {"type":"Feature","properties":{"PORT_NAME":"LIVORNO","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"L"},"geometry":{"coordinates":[10.316666666511491,43.550000000246293]}},
+                {"type":"Feature","properties":{"PORT_NAME":"VADA","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"J"},"geometry":{"coordinates":[10.450000000092462,43.349999999642534]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORTOVECCHIO DI PIOMBINO","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[10.549999999379827,42.933333333841333]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORTO SANTO STEFANO","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[11.11666666620053,42.433333333561762]}},
+                {"type":"Feature","properties":{"PORT_NAME":"CIVITAVECCHIA","COUNTRY":"IT","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":"A"},"geometry":{"coordinates":[11.783333333206894,42.099999999291406]}},
+                {"type":"Feature","properties":{"PORT_NAME":"FIUMICINO","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"LC","OIL_DEPTH":"P"},"geometry":{"coordinates":[12.233333332695112,41.766666666394421]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ANZIO","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[12.63333333343793,41.449999999772565]}},
+                {"type":"Feature","properties":{"PORT_NAME":"GAETA","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[13.583333332956331,41.19999999962652]}},
+                {"type":"Feature","properties":{"PORT_NAME":"POZZUOLI","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[14.116666666381789,40.816666666419167]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BAGNOLI","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[14.16666666692382,40.816666666419167]}},
+                {"type":"Feature","properties":{"PORT_NAME":"NAPOLI","COUNTRY":"IT","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":"H"},"geometry":{"coordinates":[14.266666666211185,40.85000000057385]}},
+                {"type":"Feature","properties":{"PORT_NAME":"CARLOFORTE","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[8.316666666390661,39.150000000231664]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORTO VESME","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[8.400000000327902,39.199999999884433]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PUERTO DE ALCUDIA","COUNTRY":"ES","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"M"},"geometry":{"coordinates":[3.133333332863902,39.833333333371741]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MAHON","COUNTRY":"ES","HARBORSIZE":"V","HARBORTYPE":"RB","OIL_DEPTH":" "},"geometry":{"coordinates":[4.266666666505272,39.883333333161772]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ROSAS","COUNTRY":"ES","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[3.183333333405898,42.266666666321576]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORT-VENDRES","COUNTRY":"FR","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[3.116666666615445,42.516666666918447]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORT-LA-NOUVELLE","COUNTRY":"FR","HARBORSIZE":"S","HARBORTYPE":"LC","OIL_DEPTH":"G"},"geometry":{"coordinates":[3.066666666073415,43.016666666511611]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SETE","COUNTRY":"FR","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"J"},"geometry":{"coordinates":[3.69999999968457,43.399999999455062]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORT SAINT LOUIS DU RHONE","COUNTRY":"FR","HARBORSIZE":"S","HARBORTYPE":"LC","OIL_DEPTH":"B"},"geometry":{"coordinates":[4.816666666179186,43.383333333407116]}},
+                {"type":"Feature","properties":{"PORT_NAME":"FOS","COUNTRY":"FR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"C"},"geometry":{"coordinates":[4.883333332969639,43.416666666669528]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORT-DE-BOUC","COUNTRY":"FR","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[4.983333333155334,43.399999999455062]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MARSEILLE","COUNTRY":"FR","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"J"},"geometry":{"coordinates":[5.366666665853068,43.316666666749036]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SAINT-TROPEZ","COUNTRY":"FR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[6.633333333075377,43.266666667235363]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SAINT-RAPHAEL","COUNTRY":"FR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[6.766666666656316,43.416666666669528]}},
+                {"type":"Feature","properties":{"PORT_NAME":"CANNES","COUNTRY":"FR","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[7.01666666667144,43.550000000246293]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ANTIBES","COUNTRY":"FR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[7.133333333105592,43.583333332963413]}},
+                {"type":"Feature","properties":{"PORT_NAME":"NICE","COUNTRY":"FR","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[7.283333332934988,43.700000000245048]}},
+                {"type":"Feature","properties":{"PORT_NAME":"VILLEFRANCHE","COUNTRY":"FR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[7.316666667228561,43.700000000245048]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MONACO","COUNTRY":"MC","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[7.416666666515926,43.733333333276633]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BASTIA","COUNTRY":"FR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"K"},"geometry":{"coordinates":[9.450000000032032,42.700000000098591]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BONIFACIO","COUNTRY":"FR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[9.166666666621696,41.383333333184481]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORT DE PROPRIANO","COUNTRY":"FR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[8.900000000358116,41.683333333218506]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORT D' AJACCIO","COUNTRY":"FR","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"N"},"geometry":{"coordinates":[8.74999999963039,41.916666666901925]}},
+                {"type":"Feature","properties":{"PORT_NAME":"CALVI","COUNTRY":"FR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[8.74999999963039,42.566666666264204]}},
+                {"type":"Feature","properties":{"PORT_NAME":"L'ILE ROUSSE","COUNTRY":"FR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[8.93333333285503,42.633333333523147]}},
+                {"type":"Feature","properties":{"PORT_NAME":"LA MADDALENA","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[9.416666666636788,41.19999999962652]}},
+                {"type":"Feature","properties":{"PORT_NAME":"OLBIA","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[9.49999999967573,40.916666666250123]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ARBATAX","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[9.700000000047122,39.933333333227814]}},
+                {"type":"Feature","properties":{"PORT_NAME":"CAGLIARI","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[9.116666666977999,39.216666667214326]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SARROCH OIL TERMINAL","COUNTRY":"IT","HARBORSIZE":"M","HARBORTYPE":"OR","OIL_DEPTH":"B"},"geometry":{"coordinates":[9.033333333040725,39.083333333599043]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PALMA DE MALLORCA","COUNTRY":"ES","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":"F"},"geometry":{"coordinates":[2.633333332833686,39.566666666357463]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORTO PONTE ROMANO","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[8.466666666220057,39.050000000173412]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ALGECIRAS","COUNTRY":"ES","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"C"},"geometry":{"coordinates":[-5.43333333354185,36.133333333718689]}},
+                {"type":"Feature","properties":{"PORT_NAME":"EUROPA POINT","COUNTRY":"GI","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":"K"},"geometry":{"coordinates":[-5.349999999604611,36.133333333718689]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MALAGA","COUNTRY":"ES","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-4.416666667232964,36.716666666244883]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MOTRIL","COUNTRY":"ES","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-3.516666667358262,36.750000000050811]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ADRA","COUNTRY":"ES","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-3.033333333576503,36.733333333351311]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ALMERIA","COUNTRY":"ES","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-2.466666666755835,36.833333333122653]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PUERTO DE CARBONERAS","COUNTRY":"ES","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-1.883333333686677,36.999999999637062]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AGUILAS","COUNTRY":"ES","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[-1.566666666881099,37.399999999812145]}},
+                {"type":"Feature","properties":{"PORT_NAME":"HORNILLO","COUNTRY":"ES","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[-1.550000000632643,37.399999999812145]}},
+                {"type":"Feature","properties":{"PORT_NAME":"CARTAGENA","COUNTRY":"ES","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"C"},"geometry":{"coordinates":[-0.983333333811975,37.583333333726053]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TORREVIEJA","COUNTRY":"ES","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-0.683333333254854,37.966666666648408]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ALICANTE","COUNTRY":"ES","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-0.483333333781759,38.333333332885765]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PUERTO DE GANDIA","COUNTRY":"ES","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-0.149999999829395,39.000000000138861]}},
+                {"type":"Feature","properties":{"PORT_NAME":"VALENCIA","COUNTRY":"ES","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-0.316666665907247,39.450000000592389]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SAGUNTO","COUNTRY":"ES","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-0.216666666619881,39.650000000167438]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BURRIANA","COUNTRY":"ES","HARBORSIZE":"V","HARBORTYPE":"RN","OIL_DEPTH":" "},"geometry":{"coordinates":[-0.049999999643699,39.883333333161772]}},
+                {"type":"Feature","properties":{"PORT_NAME":"EL GRAO","COUNTRY":"ES","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"B"},"geometry":{"coordinates":[0.016666667146787,39.966666666600943]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TARRAGONA","COUNTRY":"ES","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":"A"},"geometry":{"coordinates":[1.233333332928769,41.099999999847121]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BARCELONA","COUNTRY":"ES","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[2.166666666198713,41.349999999954036]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SAN FELIU DE GUIXOLS","COUNTRY":"ES","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[3.033333333576503,41.783333333213314]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PALAMOS","COUNTRY":"ES","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[3.116666666615445,41.83333333328715]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AIN SUKHNA TERMINAL","COUNTRY":"EG","HARBORSIZE":"L","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[32.366666666586241,29.58333333301815]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KING FAHD PORT","COUNTRY":"SA","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"A"},"geometry":{"coordinates":[38.216666666221066,23.949999999612462]}},
+                {"type":"Feature","properties":{"PORT_NAME":"RAS ISA MARINE TERMINAL","COUNTRY":"YE","HARBORSIZE":"L","HARBORTYPE":" ","OIL_DEPTH":"J"},"geometry":{"coordinates":[42.600000000058785,15.133333333262204]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AL AHMADI","COUNTRY":"YE","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"N"},"geometry":{"coordinates":[42.966666666508068,14.83333333314981]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ASSAB","COUNTRY":"ER","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":"J"},"geometry":{"coordinates":[42.749999999888217,13.000000000170687]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MITSIWA HARBOR","COUNTRY":"ER","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"L"},"geometry":{"coordinates":[39.466666666296589,15.616666666359988]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORT SUDAN","COUNTRY":"SD","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[37.233333333307392,19.599999999468686]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AL QUSAYR","COUNTRY":"EG","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[34.283333332769828,26.100000000175974]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BUR SAFAGA","COUNTRY":"EG","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[33.9499999997158,26.733333333671755]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ZEIT BAY TERMINAL","COUNTRY":"EG","HARBORSIZE":"S","HARBORTYPE":"OR","OIL_DEPTH":"C"},"geometry":{"coordinates":[33.60000000041331,27.833333333622832]}},
+                {"type":"Feature","properties":{"PORT_NAME":"EL GHARDAQA","COUNTRY":"EG","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":"N"},"geometry":{"coordinates":[33.849999999530098,27.21666666630464]}},
+                {"type":"Feature","properties":{"PORT_NAME":"RAS SHUKHIER","COUNTRY":"EG","HARBORSIZE":"M","HARBORTYPE":"OR","OIL_DEPTH":"F"},"geometry":{"coordinates":[33.283333333607729,28.133333333891624]}},
+                {"type":"Feature","properties":{"PORT_NAME":"RAS GHARIB","COUNTRY":"EG","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"M"},"geometry":{"coordinates":[33.099999999484758,28.350000000118381]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AS SUWAYS","COUNTRY":"EG","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":"L"},"geometry":{"coordinates":[32.549999999810844,29.966666666722634]}},
+                {"type":"Feature","properties":{"PORT_NAME":"EL-ADABIYA","COUNTRY":"EG","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[32.466666666771935,29.866666666685656]}},
+                {"type":"Feature","properties":{"PORT_NAME":"EL ISMAILIYA","COUNTRY":"EG","HARBORSIZE":"S","HARBORTYPE":"LC","OIL_DEPTH":" "},"geometry":{"coordinates":[32.283333333547297,30.583333332933829]}},
+                {"type":"Feature","properties":{"PORT_NAME":"RAS ABU ZANIMAH","COUNTRY":"EG","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[33.116666666631552,29.033333333255655]}},
+                {"type":"Feature","properties":{"PORT_NAME":"WADI FEIRAN","COUNTRY":"EG","HARBORSIZE":"S","HARBORTYPE":"OR","OIL_DEPTH":"J"},"geometry":{"coordinates":[33.200000000568785,28.750000000521883]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ELAT","COUNTRY":"IL","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":"J"},"geometry":{"coordinates":[34.950000000674528,29.550000000231222]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AL AQABAH","COUNTRY":"JO","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[35.000000000318224,29.51666666621874]}},
+                {"type":"Feature","properties":{"PORT_NAME":"YANBU","COUNTRY":"SA","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"A"},"geometry":{"coordinates":[38.049999999244882,24.083333333963395]}},
+                {"type":"Feature","properties":{"PORT_NAME":"JIDDAH","COUNTRY":"SA","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"M"},"geometry":{"coordinates":[39.183333332886257,21.483333333593674]}},
+                {"type":"Feature","properties":{"PORT_NAME":"JIZAN","COUNTRY":"SA","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"F"},"geometry":{"coordinates":[42.483333333624635,16.899999999191458]}},
+                {"type":"Feature","properties":{"PORT_NAME":"NEUM","COUNTRY":"BA","HARBORSIZE":"S","HARBORTYPE":" ","OIL_DEPTH":" "},"geometry":{"coordinates":[17.600000000344806,42.91666666695896]}},
+                {"type":"Feature","properties":{"PORT_NAME":"CUETA","COUNTRY":"ES","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":"L"},"geometry":{"coordinates":[-5.316666667107699,35.900000000405484]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORT D AL HOCEIMA","COUNTRY":"MA","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-3.916666666304451,35.24999999959342]}},
+                {"type":"Feature","properties":{"PORT_NAME":"RABIGH","COUNTRY":"SA","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"A"},"geometry":{"coordinates":[38.983333333413164,22.733333333681056]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ZAFARANA TERMINAL","COUNTRY":"EG","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"F"},"geometry":{"coordinates":[32.683333333391786,29.166666666026817]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ZEIT BAY LPG TERMINAL","COUNTRY":"EG","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"L"},"geometry":{"coordinates":[33.56666666611973,27.80000000001148]}},
+                {"type":"Feature","properties":{"PORT_NAME":"EAST ZEIT TERMINAL","COUNTRY":"EG","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[33.60000000041331,27.850000000405142]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SHARM EL SHEIKH","COUNTRY":"EG","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[34.283333332769828,27.850000000405142]}},
+                {"type":"Feature","properties":{"PORT_NAME":"EL TUR HARBOR","COUNTRY":"EG","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[33.616666666661764,28.233333333534514]}},
+                {"type":"Feature","properties":{"PORT_NAME":"NUWEIBA EL MUZEIMA","COUNTRY":"EG","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[34.650000000117402,28.966666666706342]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SHARMAH","COUNTRY":"SA","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[35.249999999435019,27.933333332739068]}},
+                {"type":"Feature","properties":{"PORT_NAME":"DUBA","COUNTRY":"SA","HARBORSIZE":"S","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[35.533333332845352,27.566666666704219]}},
+                {"type":"Feature","properties":{"PORT_NAME":"DUBA BULK PLANT TANKER TERMINAL","COUNTRY":"SA","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[35.900000000192961,27.316666666762117]}},
+                {"type":"Feature","properties":{"PORT_NAME":"NORTH AIN SUKHNA PORT","COUNTRY":"EG","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[32.366666666586241,29.650000000409712]}},
+                {"type":"Feature","properties":{"PORT_NAME":"RAS BADRAN OIL TERMINAL","COUNTRY":"EG","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[33.166666666275248,28.949999999441978]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SOKHNA PORT GAS TANKER TERMINAL","COUNTRY":"EG","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"L"},"geometry":{"coordinates":[32.366666666586241,29.683333333009617]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORTO DI CHIOGGIA","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"RB","OIL_DEPTH":" "},"geometry":{"coordinates":[12.299999999485566,45.233333333318356]}},
+                {"type":"Feature","properties":{"PORT_NAME":"RISAN","COUNTRY":"ME","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[18.69999999969264,42.516666666918447]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KOTOR","COUNTRY":"ME","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[18.76666666648309,42.416666667117696]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TIVAT","COUNTRY":"ME","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[18.69999999969264,42.433333333561762]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BAR","COUNTRY":"ME","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"H"},"geometry":{"coordinates":[19.083333333288667,42.083333333233462]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AL KHAIR OIL TERMINAL","COUNTRY":"SD","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":"G"},"geometry":{"coordinates":[37.250000000454172,19.58333333369486]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BESHAYER OIL TERMINAL","COUNTRY":"SD","HARBORSIZE":"M","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[37.316666666346329,19.400000000381059]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SAWAKIN HARBOR","COUNTRY":"SD","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[37.349999999741577,19.133333333420111]}},
+                {"type":"Feature","properties":{"PORT_NAME":"JIJEL","COUNTRY":"DZ","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[5.783333332844374,36.833333333122653]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SIDI KERIR (KURAYR)","COUNTRY":"EG","HARBORSIZE":"S","HARBORTYPE":"OR","OIL_DEPTH":"B"},"geometry":{"coordinates":[29.61666666642007,31.099999999972852]}},
+                {"type":"Feature","properties":{"PORT_NAME":"HAIFA","COUNTRY":"IL","HARBORSIZE":"M","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[35.000000000318224,32.816666666208711]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BAYRUT","COUNTRY":"LB","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":"K"},"geometry":{"coordinates":[35.500000000348443,33.899999999454501]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BRINDISI","COUNTRY":"IT","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":"K"},"geometry":{"coordinates":[17.983333333042541,40.649999999701855]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AKSAZ LIMANI","COUNTRY":"TR","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[28.383333333491304,36.833333333122653]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ASHQELON","COUNTRY":"IL","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[34.500000000288011,31.666666666411629]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ASHTART OIL TERMINAL","COUNTRY":"TN","HARBORSIZE":"S","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[11.383333333362408,34.283333332990033]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ZARZIS","COUNTRY":"TN","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"L"},"geometry":{"coordinates":[11.11666666620053,33.499999999657312]}},
+                {"type":"Feature","properties":{"PORT_NAME":"DIDON TERMINAL","COUNTRY":"TN","HARBORSIZE":"S","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[11.899999999641079,33.783333332982465]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MELILLI OIL TERMINAL","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"E"},"geometry":{"coordinates":[15.25000000002316,37.116666666339391]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORT METHANIER","COUNTRY":"DZ","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"G"},"geometry":{"coordinates":[6.949999999880954,36.883333333501028]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AYIOS NIKOLAOS","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[25.716666667262373,35.20000000019553]}},
+                {"type":"Feature","properties":{"PORT_NAME":"GEMLIK","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"F"},"geometry":{"coordinates":[29.116666666389854,40.41666666663987]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SALIF","COUNTRY":"YE","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[42.666666665950949,15.30000000015243]}},
+                {"type":"Feature","properties":{"PORT_NAME":"LAVRIO","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"N"},"geometry":{"coordinates":[24.066666666444036,37.700000000405545]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AL MUKHA","COUNTRY":"YE","HARBORSIZE":"M","HARBORTYPE":"CN","OIL_DEPTH":"L"},"geometry":{"coordinates":[43.249999999918401,13.316666666667111]}},
+                {"type":"Feature","properties":{"PORT_NAME":"HADERA","COUNTRY":"IL","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"E"},"geometry":{"coordinates":[34.899999999234197,32.466666666587336]}},
+                {"type":"Feature","properties":{"PORT_NAME":"RAS SUDR","COUNTRY":"EG","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"L"},"geometry":{"coordinates":[32.700000000538573,29.58333333301815]}},
+                {"type":"Feature","properties":{"PORT_NAME":"DAMIETTA","COUNTRY":"EG","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[31.74999999922354,31.483333332883507]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BUR SAID (PORT SAID)","COUNTRY":"EG","HARBORSIZE":"L","HARBORTYPE":"LC","OIL_DEPTH":" "},"geometry":{"coordinates":[32.300000000694084,31.266666666846927]}},
+                {"type":"Feature","properties":{"PORT_NAME":"EL HAMRA OIL TERMINAL","COUNTRY":"EG","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"B"},"geometry":{"coordinates":[28.866666667273066,30.983333333633812]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MERSA MATRUH","COUNTRY":"EG","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[27.233333333601479,31.350000000351855]}},
+                {"type":"Feature","properties":{"PORT_NAME":"HAMRAWEIN","COUNTRY":"EG","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[34.199999999730892,26.250000000024368]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BOURI OIL FIELD","COUNTRY":"LY","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"A"},"geometry":{"coordinates":[12.649999999686385,33.899999999454501]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KHOMS","COUNTRY":"LY","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[14.249999999962728,32.66666666645061]}},
+                {"type":"Feature","properties":{"PORT_NAME":"MENZEL BOURGUIBA","COUNTRY":"TN","HARBORSIZE":"S","HARBORTYPE":"LC","OIL_DEPTH":" "},"geometry":{"coordinates":[9.800000000232817,37.149999999620448]}},
+                {"type":"Feature","properties":{"PORT_NAME":"RADES","COUNTRY":"TN","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"L"},"geometry":{"coordinates":[10.300000000263033,36.816666666448661]}},
+                {"type":"Feature","properties":{"PORT_NAME":"DJEN-DJEN","COUNTRY":"DZ","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[5.88333333303007,36.816666666448661]}},
+                {"type":"Feature","properties":{"PORT_NAME":"EL MAADIYA","COUNTRY":"EG","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[30.149999999845495,31.266666666846927]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AL ISKANDARIYH (ALEXANDRIA)","COUNTRY":"EG","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":"K"},"geometry":{"coordinates":[29.833333333938249,31.166666666575249]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SIDON/ZAHRANI TERMINAL","COUNTRY":"LB","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"F"},"geometry":{"coordinates":[35.316666666225501,33.533333333195181]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ANTALYA OFFSHORE TERMINAL","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"C"},"geometry":{"coordinates":[30.600000000232015,36.816666666448661]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BOTAS NATURAL GAS TERMINAL","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"J"},"geometry":{"coordinates":[27.983333332748487,40.999999999677861]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BOTAS DORTYOL OIL TERMINAL","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"G"},"geometry":{"coordinates":[36.133333333959591,36.866666666049326]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TOROS GUBRE","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"N"},"geometry":{"coordinates":[35.966666666085111,36.916666666891622]}},
+                {"type":"Feature","properties":{"PORT_NAME":"YAKACIK","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"G"},"geometry":{"coordinates":[36.183333333603294,36.716666666244883]}},
+                {"type":"Feature","properties":{"PORT_NAME":"CHALKIS","COUNTRY":"GR","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":"O"},"geometry":{"coordinates":[23.599999999809064,38.46666666648018]}},
+                {"type":"Feature","properties":{"PORT_NAME":"DELTA TERMINAL","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"M"},"geometry":{"coordinates":[36.166666666456507,36.850000000174688]}},
+                {"type":"Feature","properties":{"PORT_NAME":"DIKILI","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[26.816666666610203,39.016666666450476]}},
+                {"type":"Feature","properties":{"PORT_NAME":"GEBZE","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"G"},"geometry":{"coordinates":[29.550000000527916,40.766666666647005]}},
+                {"type":"Feature","properties":{"PORT_NAME":"GULLUK","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[27.61666666629921,37.250000000504244]}},
+                {"type":"Feature","properties":{"PORT_NAME":"YARIMCA","COUNTRY":"TR","HARBORSIZE":"S","HARBORTYPE":"OR","OIL_DEPTH":"K"},"geometry":{"coordinates":[29.700000000357313,40.800000000200328]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KAVALA","COUNTRY":"GR","HARBORSIZE":"S","HARBORTYPE":"CB","OIL_DEPTH":"A"},"geometry":{"coordinates":[24.399999999498071,40.933333333499178]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ALIAGA","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"M"},"geometry":{"coordinates":[26.933333333044356,38.83333333347619]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AMBARLI","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":"J"},"geometry":{"coordinates":[28.700000000296882,40.96666666702972]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BORUSAN FERTILIZER JETTY","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[29.100000000141396,40.41666666663987]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KYMASSI","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[23.466666667126422,38.83333333347619]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ASPROPIRGOS","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":"J"},"geometry":{"coordinates":[23.599999999809064,38.033333333453392]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ACHLADI","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[22.81666666636848,38.89999999952515]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ASTAKOS","COUNTRY":"GR","HARBORSIZE":"S","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[21.100000000556314,38.483333333750174]}},
+                {"type":"Feature","properties":{"PORT_NAME":"AKRA KAVONISI","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[23.633333333204273,35.516666666452785]}},
+                {"type":"Feature","properties":{"PORT_NAME":"RETHIMNON","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[24.466666666288521,35.366666666576656]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ZALIV RASA","COUNTRY":"HR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[14.06666666673809,45.050000000297359]}},
+                {"type":"Feature","properties":{"PORT_NAME":"DUGI RAT","COUNTRY":"HR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[16.649999999928077,43.449999999299472]}},
+                {"type":"Feature","properties":{"PORT_NAME":"KORCULA","COUNTRY":"HR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[17.133333332811539,42.933333333841333]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TERMINI IMERESE","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"H"},"geometry":{"coordinates":[13.699999999390515,37.983333333939889]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORTOFERRAIO","COUNTRY":"IT","HARBORSIZE":"S","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[10.333333332759981,42.816666666737298]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ORISTANO","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"N"},"geometry":{"coordinates":[8.550000000157297,39.866666666777775]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TORRE DEL GRECO","COUNTRY":"IT","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[14.366666666396913,40.783333333346285]}},
+                {"type":"Feature","properties":{"PORT_NAME":"SPETSES","COUNTRY":"GR","HARBORSIZE":"V","HARBORTYPE":"OR","OIL_DEPTH":" "},"geometry":{"coordinates":[23.166666666569302,37.266666666464289]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PUERTO DE GARRUCHA","COUNTRY":"ES","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[-1.816666666896224,37.183333333739235]}},
+                {"type":"Feature","properties":{"PORT_NAME":"VILLANUEVA Y GELTRU","COUNTRY":"ES","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[1.733333332958984,41.233333333191027]}},
+                {"type":"Feature","properties":{"PORT_NAME":"IBIZA","COUNTRY":"ES","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":"L"},"geometry":{"coordinates":[1.449999999548617,38.89999999952515]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TOULON","COUNTRY":"FR","HARBORSIZE":"L","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[5.91666666732361,43.100000000193788]}},
+                {"type":"Feature","properties":{"PORT_NAME":"PORTO VECCHIO","COUNTRY":"FR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[9.28333333305585,41.583333333801946]}},
+                {"type":"Feature","properties":{"PORT_NAME":"TABARKA","COUNTRY":"TN","HARBORSIZE":"V","HARBORTYPE":"CB","OIL_DEPTH":" "},"geometry":{"coordinates":[8.766666666777178,36.966666667022331]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ABU KHAMMASH","COUNTRY":"LY","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":"L"},"geometry":{"coordinates":[11.816666666602137,33.066666666303426]}},
+                {"type":"Feature","properties":{"PORT_NAME":"ISLAS HORMIGAS","COUNTRY":"ES","HARBORSIZE":" ","HARBORTYPE":" ","OIL_DEPTH":" "},"geometry":{"coordinates":[-0.650000000757941,37.650000000630321]}},
+                {"type":"Feature","properties":{"PORT_NAME":"LAS HORMIGAS","COUNTRY":"ES","HARBORSIZE":" ","HARBORTYPE":" ","OIL_DEPTH":" "},"geometry":{"coordinates":[3.183333333405898,41.8666666671744]}},
+                {"type":"Feature","properties":{"PORT_NAME":"BODRUM","COUNTRY":"TR","HARBORSIZE":"V","HARBORTYPE":"CN","OIL_DEPTH":" "},"geometry":{"coordinates":[27.433333333074572,37.033333333610841]}}
+            ];
+
+            // إزالة التكرارات
+            const uniquePorts = Array.from(
+                new Map(rawFeatures.map(f => [f.properties.PORT_NAME + f.geometry.coordinates.join(','), f])).values()
+            );
+
+            // تحويل البيانات
+            const allPorts = uniquePorts.map(f => ({
+                name: f.properties.PORT_NAME,
+                country: f.properties.COUNTRY,
+                size: f.properties.HARBORSIZE,
+                type: f.properties.HARBORTYPE,
+                oil: f.properties.OIL_DEPTH.trim() || "N/A",
+                coords: [f.geometry.coordinates[1], f.geometry.coordinates[0]],
+                isOil: f.properties.OIL_DEPTH.trim() !== "" && f.properties.OIL_DEPTH.trim() !== "N/A" && f.properties.OIL_DEPTH.trim() !== " "
+            }));
+
+            // المتغيرات العامة
+            const listDiv = document.getElementById('list');
+            const searchInput = document.getElementById('search');
+            let currentFilter = 'all';
+            let markers = [];
+            let sizeChart, typeChart;
+
+            // دالة حساب الإحصائيات
+            function updateStats() {
+                const countries = new Set(allPorts.map(p => p.country));
+                const oilCount = allPorts.filter(p => p.isOil).length;
+                const largeCount = allPorts.filter(p => p.size === 'L').length;
+                
+                // تحديث الهيدر
+                document.querySelector('#totalPortsStat .header-stat-value').textContent = allPorts.length;
+                document.querySelector('#totalCountriesStat .header-stat-value').textContent = countries.size;
+                document.querySelector('#oilPortsStat .header-stat-value').textContent = oilCount;
+                
+                // تحديث بطاقات التحليلات
+                document.getElementById('analyticsCountries').textContent = countries.size;
+                document.getElementById('analyticsPorts').textContent = allPorts.length;
+                document.getElementById('analyticsOil').textContent = oilCount;
+                document.getElementById('analyticsLarge').textContent = largeCount;
+                
+                // تحديث الإحصائيات الإضافية
+                // أكثر دولة
+                const countryStats = {};
+                allPorts.forEach(p => {
+                    countryStats[p.country] = (countryStats[p.country] || 0) + 1;
+                });
+                
+                const topCountry = Object.entries(countryStats).sort((a, b) => b[1] - a[1])[0];
+                if (topCountry) {
+                    document.getElementById('topCountry').textContent = `${topCountry[0]} (${topCountry[1]})`;
+                }
+                
+                // نسبة موانئ النفط
+                const oilPercentage = Math.round((oilCount / allPorts.length) * 100);
+                document.getElementById('oilPercentage').textContent = `${oilPercentage}%`;
+                document.getElementById('oilPercentageBar').style.width = `${oilPercentage}%`;
+                
+                // تحديث عدد الموانئ المرئية
+                updateVisibleCount();
+            }
+
+            // دالة تحديث عدد الموانئ المرئية
+            function updateVisibleCount() {
+                const visibleCards = document.querySelectorAll('.port-card[style="display: block;"], .port-card:not([style*="display: none"])');
+                document.getElementById('visiblePortsCount').textContent = visibleCards.length;
+            }
+
+            // دالة تصفية الموانئ
+            window.filterPorts = function(filter, element) {
+                currentFilter = filter;
+                
+                // تحديث التبويبات
+                document.querySelectorAll('.filter-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                element.classList.add('active');
+                
+                // تطبيق الفلتر على البطاقات
+                document.querySelectorAll('.port-card').forEach(card => {
+                    const isOil = card.getAttribute('data-oil') === 'true';
+                    const size = card.getAttribute('data-size');
+                    
+                    let show = true;
+                    if (filter === 'oil') show = isOil;
+                    else if (filter === 'large') show = size === 'L';
+                    else if (filter === 'small') show = size === 'S' || size === 'V';
+                    
+                    card.style.display = show ? 'block' : 'none';
+                });
+                
+                updateVisibleCount();
+            };
+
+            // دالة إظهار/إخفاء الفلاتر
+            window.toggleFilters = function() {
+                const filterContent = document.getElementById('filterContent');
+                const arrow = document.getElementById('filterArrow');
+                
+                if (filterContent.style.display === 'none') {
+                    filterContent.style.display = 'block';
+                    arrow.className = 'fas fa-chevron-up';
+                } else {
+                    filterContent.style.display = 'none';
+                    arrow.className = 'fas fa-chevron-down';
+                }
+            };
+
+            // دالة تحديث البيانات
+            window.refreshData = function() {
+                const btn = document.querySelector('.floating-btn i');
+                btn.className = 'fas fa-spinner fa-spin';
+                
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            };
+
+            // دالة تبديل الوضع الليلي
+            window.toggleDarkMode = function() {
+                document.body.classList.toggle('light-mode');
+                const icon = document.querySelector('.dark-mode-toggle i');
+                if (document.body.classList.contains('light-mode')) {
+                    icon.className = 'fas fa-sun';
+                } else {
+                    icon.className = 'fas fa-moon';
+                }
+            };
+
+            // دالة إنشاء الرسوم البيانية
+            function createCharts() {
+                // إحصائيات الحجم
+                const sizeStats = {
+                    L: allPorts.filter(p => p.size === 'L').length,
+                    M: allPorts.filter(p => p.size === 'M').length,
+                    S: allPorts.filter(p => p.size === 'S' || p.size === 'V').length
+                };
+                
+                const sizeCtx = document.getElementById('sizeChart').getContext('2d');
+                sizeChart = new Chart(sizeCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['كبير (L)', 'متوسط (M)', 'صغير (S/V)'],
+                        datasets: [{
+                            data: [sizeStats.L, sizeStats.M, sizeStats.S],
+                            backgroundColor: ['#00d4ff', '#ffaa00', '#ff4757'],
+                            borderColor: '#141619',
+                            borderWidth: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#141619',
+                                titleColor: '#00d4ff',
+                                bodyColor: '#fff'
+                            }
+                        },
+                        cutout: '70%'
+                    }
+                });
+                
+                // إحصائيات الأنواع
+                const typeStats = {};
+                allPorts.forEach(p => {
+                    if (p.type && p.type !== ' ') {
+                        typeStats[p.type] = (typeStats[p.type] || 0) + 1;
+                    }
+                });
+                
+                const topTypes = Object.entries(typeStats)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5);
+                
+                const typeCtx = document.getElementById('typeChart').getContext('2d');
+                typeChart = new Chart(typeCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: topTypes.map(t => t[0]),
+                        datasets: [{
+                            data: topTypes.map(t => t[1]),
+                            backgroundColor: '#00d4ff',
+                            borderRadius: 5
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#141619',
+                                titleColor: '#00d4ff'
+                            }
+                        },
+                        scales: {
+                            x: { display: false },
+                            y: {
+                                ticks: {
+                                    color: '#a0a0a0',
+                                    font: { size: 9, family: 'Tajawal' }
+                                },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // دالة العرض الرئيسية
+            function render() {
+                // تحديث الإحصائيات
+                updateStats();
+                
+                // تفريغ القائمة
+                listDiv.innerHTML = '';
+                
+                // إزالة العلامات القديمة
+                markers.forEach(m => map.removeLayer(m));
+                markers = [];
+                
+                // إضافة العلامات الجديدة
+                allPorts.forEach(p => {
+                    // إضافة marker للخريطة
+                    const marker = L.circleMarker(p.coords, {
+                        radius: p.size === 'L' ? 10 : (p.size === 'M' ? 7 : 5),
+                        fillColor: p.isOil ? "#ffa500" : "#00d4ff",
+                        color: "#fff", 
+                        weight: 2, 
+                        fillOpacity: 0.9,
+                        pulse: p.isOil
+                    }).addTo(map);
+                    
+                    markers.push(marker);
+
+                    marker.bindPopup(`
+                        <div style="font-family: 'Tajawal', sans-serif; text-align: center; min-width: 220px; background: #141619; color: white; border-radius: 10px;">
+                            <h3 style="margin: 10px 0; color: #00d4ff; font-size: 1.2rem;">${p.name}</h3>
+                            <div style="border-top: 1px solid #2a2d32; margin: 8px 0;"></div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: right; padding: 10px;">
+                                <div><i class="fas fa-flag" style="color: #00d4ff; margin-left: 5px;"></i> الدولة:</div>
+                                <div><strong>${p.country}</strong></div>
+                                <div><i class="fas fa-ruler" style="color: #00d4ff; margin-left: 5px;"></i> الحجم:</div>
+                                <div><strong>${p.size === 'L' ? 'كبير' : p.size === 'M' ? 'متوسط' : 'صغير'}</strong></div>
+                                <div><i class="fas fa-oil-can" style="color: #00d4ff; margin-left: 5px;"></i> النفط:</div>
+                                <div><strong>${p.isOil ? '✅ نعم' : '❌ لا'}</strong></div>
+                                <div><i class="fas fa-ship" style="color: #00d4ff; margin-left: 5px;"></i> النوع:</div>
+                                <div><strong>${p.type || 'غير محدد'}</strong></div>
+                            </div>
+                        </div>
+                    `);
+
+                    // إضافة بطاقة للموقع
+                    const card = document.createElement('div');
+                    card.className = 'port-card';
+                    card.setAttribute('data-name', p.name.toUpperCase());
+                    card.setAttribute('data-country', p.country);
+                    card.setAttribute('data-oil', p.isOil);
+                    card.setAttribute('data-size', p.size);
+                    
+                    card.innerHTML = `
+                        <div class="port-card-header">
+                            <h4>
+                                <span class="badge">${p.country}</span> 
+                                ${p.name}
+                            </h4>
+                            <span class="oil-indicator ${p.isOil ? 'oil-yes' : 'oil-no'}">
+                                <i class="fas ${p.isOil ? 'fa-oil-can' : 'fa-water'}"></i>
+                                ${p.isOil ? 'نفط' : 'عام'}
+                            </span>
+                        </div>
+                        <div class="meta">
+                            <span><i class="fas fa-ruler"></i> ${p.size === 'L' ? 'كبير' : p.size === 'M' ? 'متوسط' : 'صغير'}</span>
+                            <span><i class="fas fa-tag"></i> ${p.type || 'غير محدد'}</span>
+                            <span><i class="fas fa-map-marker-alt"></i> ${p.coords[0].toFixed(2)}, ${p.coords[1].toFixed(2)}</span>
+                        </div>
+                    `;
+                    
+                    card.onclick = () => { 
+                        map.flyTo(p.coords, 12, {
+                            animate: true,
+                            duration: 1.5
+                        }); 
+                        setTimeout(() => marker.openPopup(), 500);
+                        
+                        // تأثير بصري على البطاقة
+                        card.style.transform = 'scale(0.98)';
+                        setTimeout(() => card.style.transform = '', 200);
+                    };
+                    
+                    listDiv.appendChild(card);
+                });
+
+                // إنشاء الرسوم البيانية
+                createCharts();
+                
+                // تحديث عدد الموانئ المرئية
+                updateVisibleCount();
+            }
+
+            // وظيفة البحث
+            searchInput.oninput = (e) => {
+                const searchTerm = e.target.value.trim().toUpperCase();
+                document.querySelectorAll('.port-card').forEach(card => {
+                    if (searchTerm === '') {
+                        // إذا كان البحث فارغاً، طبق الفلتر الحالي
+                        const isOil = card.getAttribute('data-oil') === 'true';
+                        const size = card.getAttribute('data-size');
+                        
+                        let show = true;
+                        if (currentFilter === 'oil') show = isOil;
+                        else if (currentFilter === 'large') show = size === 'L';
+                        else if (currentFilter === 'small') show = size === 'S' || size === 'V';
+                        
+                        card.style.display = show ? 'block' : 'none';
+                    } else {
+                        const cardText = card.getAttribute('data-name') + ' ' + card.getAttribute('data-country');
+                        card.style.display = cardText.includes(searchTerm) ? 'block' : 'none';
+                    }
+                });
+                
+                updateVisibleCount();
+            };
+
+            // بدء التطبيق
+            render();
+
+        })();
+    </script>
+</body>
+</html>
